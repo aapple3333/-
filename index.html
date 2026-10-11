@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>庫存點貨與金額計算</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: #f4f6f8;
+            color: #333;
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+            padding-bottom: 80px;
+        }
+        h1 {
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 16px;
+            color: #1a73e8;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 16px;
+        }
+        .category-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #202124;
+            border-bottom: 2px solid #e8eaed;
+            padding-bottom: 6px;
+        }
+        .item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .item-info {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .item-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #3c4043;
+        }
+        .item-price {
+            font-size: 13px;
+            color: #5f6368;
+        }
+        .qty-controls {
+            display: flex;
+            align-items: center;
+        }
+        .qty-btn {
+            width: 38px;
+            height: 38px;
+            font-size: 20px;
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .qty-input {
+            width: 50px;
+            height: 38px;
+            text-align: center;
+            font-size: 16px;
+            border: 1px solid #dadce0;
+            border-radius: 6px;
+            margin: 0 6px;
+            background: #fff;
+        }
+        .summary-box {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            padding: 12px 16px;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 600px;
+            margin: 0 auto;
+            z-index: 100;
+        }
+        .total-amount {
+            font-size: 20px;
+            font-weight: bold;
+            color: #d93025;
+        }
+        .btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-danger {
+            background-color: #d93025;
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 6px;
+        }
+        .history-card {
+            background: #fff;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #e8eaed;
+            overflow: hidden;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f3f4;
+            padding: 10px 14px;
+        }
+        .history-body {
+            padding: 12px;
+            font-size: 14px;
+            color: #484c52;
+            display: none;
+            border-top: 1px solid #e8eaed;
+        }
+        .history-body.active {
+            display: block;
+        }
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: #1a73e8;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>庫存點貨與金額計算</h1>
+
+    <div class="card">
+        <div class="category-title">足立康系列</div>
+        <div class="item-row">
+            <div class="item-info">
+                <div class="item-name">足立康款式 A</div>
+                <div class="item-price">單價: $350</div>
+            </div>
+            <div class="qty-controls">
+                <button class="qty-btn" onclick="changeQty('zlj_1', -1)">-</button>
+                <input type="number" id="zlj_1" class="qty-input" value="0" min="0" oninput="calculate()">
+                <button class="qty-btn" onclick="changeQty('zlj_1', 1)">+</button>
+            </div>
+        </div>
+        <div class="item-row">
+            <div class="item-info">
+                <div class="item-name">足立康款式 B</div>
+                <div class="item-price">單價: $400</div>
+            </div>
+            <div class="qty-controls">
+                <button class="qty-btn" onclick="changeQty('zlj_2', -1)">-</button>
+                <input type="number" id="zlj_2" class="qty-input" value="0" min="0" oninput="calculate()">
+                <button class="qty-btn" onclick="changeQty('zlj_2', 1)">+</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="category-title">FOOTER 系列</div>
+        <div class="item-row">
+            <div class="item-info">
+                <div class="item-name">FOOTER 款式 A</div>
+                <div class="item-price">單價: $250</div>
+            </div>
+            <div class="qty-controls">
+                <button class="qty-btn" onclick="changeQty('footer_1', -1)">-</button>
+                <input type="number" id="footer_1" class="qty-input" value="0" min="0" oninput="calculate()">
+                <button class="qty-btn" onclick="changeQty('footer_1', 1)">+</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="category-title">歷史紀錄</div>
+        <div id="historyList"></div>
+    </div>
+
+    <div class="summary-box">
+        <div>
+            <div style="font-size: 12px; color: #5f6368;">總金額</div>
+            <div class="total-amount" id="totalAmount">$0</div>
+        </div>
+        <div>
+            <button class="btn" onclick="saveRecord()">結算並儲存</button>
+        </div>
+    </div>
+
+    <script>
+        const prices = {
+            'zlj_1': 350,
+            'zlj_2': 400,
+            'footer_1': 250
+        };
+
+        const names = {
+            'zlj_1': '足立康款式 A',
+            'zlj_2': '足立康款式 B',
+            'footer_1': 'FOOTER 款式 A'
+        };
+
+        function changeQty(id, delta) {
+            const input = document.getElementById(id);
+            let val = parseInt(input.value) || 0;
+            val = Math.max(0, val + delta);
+            input.value = val;
+            calculate();
+        }
+
+        function calculate() {
+            let total = 0;
+            for (let id in prices) {
+                const qty = parseInt(document.getElementById(id).value) || 0;
+                total += qty * prices[id];
+            }
+            document.getElementById('totalAmount').textContent = '$' + total.toLocaleString();
+        }
+
+        function saveRecord() {
+            let itemsSummary = [];
+            let total = 0;
+
+            for (let id in prices) {
+                const qty = parseInt(document.getElementById(id).value) || 0;
+                if (qty > 0) {
+                    const subtotal = qty * prices[id];
+                    total += subtotal;
+                    itemsSummary.push(`${names[id]} x ${qty} ($${subtotal})`);
+                }
+            }
+
+            if (total === 0) {
+                alert('請至少選擇一項商品再儲存！');
+                return;
+            }
+
+            const now = new Date();
+            const timeString = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+            const record = {
+                time: timeString,
+                total: total,
+                details: itemsSummary
+            };
+
+            let history = JSON.parse(localStorage.getItem('order_history') || '[]');
+            history.unshift(record);
+            localStorage.setItem('order_history', JSON.stringify(history));
+
+            // 清空輸入
+            for (let id in prices) {
+                document.getElementById(id).value = 0;
+            }
+            calculate();
+            loadHistory();
+            alert('已成功儲存紀錄！');
+        }
+
+        function loadHistory() {
+            const historyList = document.getElementById('historyList');
+            const history = JSON.parse(localStorage.getItem('order_history') || '[]');
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<div style="color: #888; text-align: center; padding: 10px;">尚無歷史紀錄</div>';
+                return;
+            }
+
+            let html = '';
+            history.forEach((rec, index) => {
+                html += `
+                    <div class="history-card">
+                        <div class="history-header">
+                            <div>
+                                <strong>${rec.time}</strong><br>
+                                <span style="color: #d93025; font-weight: bold;">總金額: $</span><span style="color: #d93025; font-weight: bold;">${rec.total.toLocaleString()}</span>
+                            </div>
+                            <div>
+                                <button class="toggle-btn" onclick="toggleDetail(${index})">展開明細</button>
+                                <button class="btn btn-danger" onclick="deleteRecord(${index})">刪除</button>
+                            </div>
+                        </div>
+                        <div class="history-body" id="detail_${index}">
+                            ${rec.details.join('<br>')}
+                        </div>
+                    </div>
+                `;
+            });
+            historyList.innerHTML = html;
+        }
+
+        function toggleDetail(index) {
+            const body = document.getElementById(`detail_${index}`);
+            body.classList.toggle('active');
+        }
+
+        function deleteRecord(index) {
+            if (confirm('確定要刪除這筆紀錄嗎？')) {
+                let history = JSON.parse(localStorage.getItem('order_history') || '[]');
+                history.splice(index, 1);
+                localStorage.setItem('order_history', JSON.stringify(history));
+                loadHistory();
+            }
+        }
+
+        // 初始化載入歷史紀錄
+        loadHistory();
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>足立康與FOOTER進貨點貨計算器</title>
+  <title>雲端多人同步進貨點貨計算器</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -18,11 +18,11 @@
   <header class="sticky top-0 z-50 bg-slate-900 text-amber-400 px-3 sm:px-4 py-2.5 flex justify-between items-center whitespace-nowrap h-14 shadow-md border-b-2 border-amber-500">
     <div class="text-lg sm:text-xl font-black tracking-tight flex items-center gap-2 min-w-0 flex-1 mr-2 text-white">
       <span class="flex-shrink-0 text-amber-400">📦</span> 
-      <span class="truncate">進貨點貨計算器</span>
+      <span class="truncate">雲端點貨計算器</span>
     </div>
     <div class="flex items-center gap-1.5 flex-shrink-0">
       <button onclick="openHistoryModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 active:bg-slate-600 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-black tracking-wide transition-all active:scale-95 h-9 flex items-center justify-center border border-amber-500/40">
-        📜 歷史 <span id="historyBadge" class="ml-1 px-1.5 py-0.2 bg-amber-500 text-slate-950 text-[10px] rounded-full hidden">0</span>
+        📜 歷史
       </button>
       <button onclick="clearAllQuantities()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 active:bg-slate-600 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-black tracking-wide transition-all active:scale-95 h-9 flex items-center justify-center border border-amber-500/40">
         🗑️ 清空
@@ -37,7 +37,7 @@
   </header>
 
   <div class="sticky top-14 z-40 bg-white/95 backdrop-blur-md border-b border-amber-200/60 shadow-2xs">
-    <div class="flex overflow-x-auto no-scrollbar px-3 py-2 gap-2 items-center" id="categoryBar">
+    <div class="flex overflow-x-auto no-scrollbar px-3 py-2 gap-2 items-center flex-nowrap whitespace-nowrap" id="categoryBar">
       <!-- Categories dynamically inserted -->
     </div>
     <div class="px-3 pb-2.5 pt-0.5">
@@ -62,7 +62,6 @@
     </button>
   </footer>
 
-  <!-- Summary Modal -->
   <div id="summaryModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 hidden items-center justify-center p-3.5">
     <div class="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-amber-300">
       <div class="bg-slate-900 text-amber-400 px-5 py-3.5 flex justify-between items-center border-b border-amber-500/30">
@@ -74,7 +73,7 @@
       </div>
       <div class="p-3.5 bg-slate-50 border-t border-slate-200 flex flex-col gap-2">
         <button onclick="markAsCheckedOut()" class="w-full bg-slate-900 hover:bg-slate-800 text-amber-400 py-3 rounded-xl font-black text-lg shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 border border-amber-500">
-          <span>✅</span> 標記已結帳並存入紀錄
+          <span>✅</span> 標記已結帳並存入雲端紀錄
         </button>
         <button onclick="copyLineMessage()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-black text-lg shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2">
           <span>📋</span> 複製 LINE 點貨訊息
@@ -83,19 +82,18 @@
     </div>
   </div>
 
-  <!-- History Records Modal -->
   <div id="historyModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 hidden items-center justify-center p-3.5">
     <div class="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-amber-300">
       <div class="bg-slate-900 text-amber-400 px-5 py-3.5 flex justify-between items-center border-b border-amber-500/30">
-        <h3 class="text-xl sm:text-2xl font-black flex items-center gap-2 text-white"><span>📜</span> 已結帳歷史紀錄</h3>
+        <h3 class="text-xl sm:text-2xl font-black flex items-center gap-2 text-white"><span>📜</span> 雲端同步歷史紀錄</h3>
         <button onclick="closeModal('historyModal')" class="text-amber-400 hover:text-white text-2xl font-bold p-1 transition-colors">✕</button>
       </div>
       <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-3" id="historyModalContent">
-        <!-- History cards dynamically rendered -->
+        <div class="text-center py-12 text-slate-400 font-bold text-lg">正在載入雲端紀錄...</div>
       </div>
       <div class="p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-        <button onclick="clearAllHistory()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold px-3 py-2 rounded-xl text-xs border border-rose-300">清空所有紀錄</button>
-        <button onclick="closeModal('historyModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2 rounded-xl text-sm">關閉</button>
+        <button onclick="loadCloudHistoryModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1">🔄 重新整理</button>
+        <button onclick="closeModal('historyModal')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl text-sm">關閉</button>
       </div>
     </div>
   </div>
@@ -119,12 +117,27 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-sm font-black text-slate-800 mb-1">一打進價 ($)</label>
-            <input type="number" id="itemDozenPriceInput" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all" placeholder="720">
+            <input type="number" inputmode="numeric" pattern="[0-9]*" id="itemDozenPriceInput" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all" placeholder="720">
           </div>
           <div>
             <label class="block text-sm font-black text-slate-800 mb-1">一雙進價 ($)</label>
-            <input type="number" id="itemPairPriceInput" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all" placeholder="60">
+            <input type="number" inputmode="numeric" pattern="[0-9]*" id="itemPairPriceInput" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-base text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all" placeholder="60">
           </div>
+        </div>
+        <div>
+          <label class="block text-sm font-black text-slate-800 mb-1">商品圖片 (選填)</label>
+          <div class="flex items-center gap-3">
+            <div id="imagePreviewContainer" class="w-14 h-14 bg-slate-100 border border-slate-300 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
+              <span class="text-2xl" id="imagePreviewPlaceholder">📦</span>
+              <img id="imagePreviewImg" class="w-full h-full object-cover hidden" alt="預覽">
+            </div>
+            <div class="flex-1 flex gap-2">
+              <input type="file" id="itemImageFile" accept="image/*" onchange="handleImageUpload(event)" class="hidden">
+              <button type="button" onclick="document.getElementById('itemImageFile').click()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 px-3 rounded-xl text-sm border border-slate-300 transition-all">選擇圖片</button>
+              <button type="button" onclick="removeProductImage()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold py-2 px-3 rounded-xl text-sm border border-rose-300 transition-all">移除圖片</button>
+            </div>
+          </div>
+          <input type="hidden" id="itemImageBase64">
         </div>
       </div>
       <div class="p-3.5 bg-slate-50 border-t border-slate-200">
@@ -141,7 +154,10 @@
       </div>
       <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-5">
         <div>
-          <h4 class="font-black text-slate-900 text-base mb-2">分類管理</h4>
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="font-black text-slate-900 text-base">分類管理 (可改名與排序)</h4>
+            <span class="text-xs font-bold text-slate-500">使用 ⬆️ ⬇️ 調整順序</span>
+          </div>
           <div class="flex gap-2 mb-2.5">
             <input type="text" id="newCatInput" class="flex-1 p-2 bg-slate-50 border border-slate-300 rounded-xl text-base font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all" placeholder="新分類名稱">
             <button onclick="addCategory()" class="bg-slate-900 hover:bg-slate-800 text-amber-400 px-4 rounded-xl text-base font-black shadow-2xs transition-all active:scale-95">新增</button>
@@ -160,87 +176,80 @@
   </div>
 
   <script>
-    const STORAGE_PREFIX = 'zulin_stock_calculator_v2_';
-    
+    // 雲端資料庫設定 (JSONBin)
+    const BIN_ID = '6acb8171ac6210605a27bc41';
+    const API_KEY = '$2a$10$CiO6ioiPvSncqvUg6oUNl.q.3OKFbPu5mxjpFW7pZ/kR.lCqvng1C';
+
     const defaultItems = [
-      { id: '1', name: '足立康一般', category: '足立康', dozenPrice: 660, pairPrice: 55 },
-      { id: '2', name: '足立康健康襪', category: '足立康', dozenPrice: 720, pairPrice: 60 },
-      { id: '3', name: 'FOOTER', category: 'FOOTER', dozenPrice: 1260, pairPrice: 105 },
-      { id: '4', name: 'FOOTER長款', category: 'FOOTER', dozenPrice: 1440, pairPrice: 120 },
-      { id: '5', name: '一般袖套', category: '袖套類', dozenPrice: 240, pairPrice: 20 },
-      { id: '6', name: '露趾袖套', category: '袖套類', dozenPrice: 260, pairPrice: 22 },
-      { id: '7', name: '抹布', category: '雜貨毛巾', dozenPrice: 83, pairPrice: 7 },
-      { id: '8', name: '黃標襪', category: '一般襪類', dozenPrice: 100, pairPrice: 9 },
-      { id: '9', name: '一般襪子', category: '一般襪類', dozenPrice: 168, pairPrice: 14 },
-      { id: '10', name: 'FP901', category: '特別款', dozenPrice: 840, pairPrice: 70 },
-      { id: '11', name: 'FP105(更長款)', category: '特別款', dozenPrice: 1080, pairPrice: 90 },
-      { id: '12', name: '運動毛巾', category: '雜貨毛巾', dozenPrice: 360, pairPrice: 30 }
+      { id: '1', name: '足立康一般', category: '足立康', dozenPrice: 660, pairPrice: 55, image: '' },
+      { id: '2', name: '足立康健康襪', category: '足立康', dozenPrice: 720, pairPrice: 60, image: '' },
+      { id: '3', name: 'FOOTER', category: 'FOOTER', dozenPrice: 1260, pairPrice: 105, image: '' },
+      { id: '4', name: 'FOOTER長款', category: 'FOOTER', dozenPrice: 1440, pairPrice: 120, image: '' },
+      { id: '5', name: '一般袖套', category: '袖套類', dozenPrice: 240, pairPrice: 20, image: '' },
+      { id: '6', name: '露趾袖套', category: '袖套類', dozenPrice: 260, pairPrice: 22, image: '' },
+      { id: '7', name: '抹布', category: '雜貨毛巾', dozenPrice: 83, pairPrice: 7, image: '' },
+      { id: '8', name: '黃標襪', category: '一般襪類', dozenPrice: 100, pairPrice: 9, image: '' },
+      { id: '9', name: '一般襪子', category: '一般襪類', dozenPrice: 168, pairPrice: 14, image: '' },
+      { id: '10', name: 'FP901', category: '特別款', dozenPrice: 840, pairPrice: 70, image: '' },
+      { id: '11', name: 'FP105(更長款)', category: '特別款', dozenPrice: 1080, pairPrice: 90, image: '' },
+      { id: '12', name: '運動毛巾', category: '雜貨毛巾', dozenPrice: 360, pairPrice: 30, image: '' }
     ];
 
-    let categories = [];
-    let items = [];
+    let categories = JSON.parse(localStorage.getItem('stock_categories')) || ['足立康', 'FOOTER', '袖套類', '一般襪類', '特別款', '雜貨毛巾'];
+    let items = JSON.parse(localStorage.getItem('stock_items')) || defaultItems;
     let currentCategory = 'all';
     let searchQuery = '';
-    let itemQuantities = {};
+    let itemQuantities = JSON.parse(localStorage.getItem('stock_quantities')) || {};
     let checkoutHistory = [];
 
-    function loadData() {
-      try {
-        const storedCats = localStorage.getItem(STORAGE_PREFIX + 'categories');
-        categories = storedCats ? JSON.parse(storedCats) : ['足立康', 'FOOTER', '袖套類', '一般襪類', '特別款', '雜貨毛巾'];
-      } catch (e) {
-        categories = ['足立康', 'FOOTER', '袖套類', '一般襪類', '特別款', '雜貨毛巾'];
-      }
-
-      try {
-        const storedItems = localStorage.getItem(STORAGE_PREFIX + 'items');
-        items = storedItems ? JSON.parse(storedItems) : defaultItems;
-      } catch (e) {
-        items = defaultItems;
-      }
-
-      try {
-        const storedQtys = localStorage.getItem(STORAGE_PREFIX + 'quantities');
-        itemQuantities = storedQtys ? JSON.parse(storedQtys) : {};
-      } catch (e) {
-        itemQuantities = {};
-      }
-
-      try {
-        const storedHistory = localStorage.getItem(STORAGE_PREFIX + 'checkout_history');
-        checkoutHistory = storedHistory ? JSON.parse(storedHistory) : [];
-      } catch (e) {
-        checkoutHistory = [];
-      }
-    }
-
-    function saveData() {
-      try {
-        localStorage.setItem(STORAGE_PREFIX + 'categories', JSON.stringify(categories));
-        localStorage.setItem(STORAGE_PREFIX + 'items', JSON.stringify(items));
-        localStorage.setItem(STORAGE_PREFIX + 'quantities', JSON.stringify(itemQuantities));
-        localStorage.setItem(STORAGE_PREFIX + 'checkout_history', JSON.stringify(checkoutHistory));
-      } catch (e) {
-        console.error('儲存資料至 localStorage 失敗:', e);
-      }
-    }
-
     function init() {
-      loadData();
       renderCategories();
       renderItems();
       updateTotal();
-      updateHistoryBadge();
+      loadCloudHistoryModal();
     }
 
-    function updateHistoryBadge() {
-      const badge = document.getElementById('historyBadge');
-      if (checkoutHistory.length > 0) {
-        badge.innerText = checkoutHistory.length;
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
-      }
+    function saveDataLocally() {
+      localStorage.setItem('stock_categories', JSON.stringify(categories));
+      localStorage.setItem('stock_items', JSON.stringify(items));
+      localStorage.setItem('stock_quantities', JSON.stringify(itemQuantities));
+    }
+
+    function loadCloudHistoryModal() {
+      fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+        headers: { 'X-Master-Key': API_KEY }
+      })
+      .then(res => res.json())
+      .then(data => {
+        checkoutHistory = data.record || [];
+        if (!Array.isArray(checkoutHistory)) checkoutHistory = [];
+        const container = document.getElementById('historyModalContent');
+        if (container && !document.getElementById('historyModal').classList.contains('hidden')) {
+          renderHistoryList();
+        }
+      })
+      .catch(err => {
+        console.error('載入雲端紀錄失敗', err);
+      });
+    }
+
+    function saveCloudHistory(callback) {
+      fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': API_KEY
+        },
+        body: JSON.stringify(checkoutHistory)
+      })
+      .then(res => res.json())
+      .then(() => {
+        if (callback) callback();
+      })
+      .catch(err => {
+        console.error('同步至雲端失敗', err);
+        alert('雲端同步失敗，請檢查網路連線');
+      });
     }
 
     function renderCategories() {
@@ -285,48 +294,60 @@
         const subtotal = (qty.dozen * item.dozenPrice) + (qty.pair * item.pairPrice);
 
         const cardStyle = hasQty 
-          ? 'bg-amber-50/70 border-2 border-amber-500 shadow-md ring-1 ring-amber-400/30' 
-          : 'bg-white border border-slate-200/90 shadow-2xs';
+          ? 'bg-amber-50/80 border-2 border-amber-400 shadow-md ring-1 ring-amber-400/30' 
+          : 'bg-white border border-slate-200 shadow-2xs';
 
         const subtotalBadgeStyle = hasQty
           ? 'bg-amber-500 text-slate-950 font-black border border-amber-600/30'
           : 'bg-slate-100 text-slate-700 font-bold border border-slate-200';
 
-        const boxBgStyle = 'bg-slate-100/80 border-slate-300';
+        const dividerColor = hasQty ? 'border-amber-300' : 'border-slate-200';
+
+        let imgHtml = '';
+        if (item.image) {
+          imgHtml = `<div class="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-300 flex-shrink-0 flex items-center justify-center"><img src="${item.image}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='📦'"></div>`;
+        } else {
+          imgHtml = `<div class="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-300 flex-shrink-0 flex items-center justify-center text-2xl">📦</div>`;
+        }
 
         html += `
           <div class="rounded-2xl p-3 mb-2.5 transition-all ${cardStyle}">
-            <div class="flex justify-between items-center gap-2 mb-1.5">
-              <h2 class="text-xl sm:text-2xl font-black text-slate-950 leading-tight tracking-tight flex-1 truncate">${item.name}</h2>
-              ${hasQty ? `<div class="flex-shrink-0 bg-amber-500 text-slate-950 text-xs sm:text-sm font-black px-2.5 py-1 rounded-lg border border-amber-600/30 shadow-2xs">✅ 已點 ${qty.dozen}打 ${qty.pair}雙</div>` : ''}
+            <div class="flex justify-between items-center gap-2 mb-1">
+              <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                ${imgHtml}
+                <h2 class="text-xl sm:text-2xl font-black text-slate-950 leading-tight tracking-tight truncate">${item.name}</h2>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="text-sm sm:text-base font-black text-slate-700">已點：${qty.dozen}打 ${qty.pair}雙</span>
+              </div>
             </div>
 
             <div class="flex items-center justify-between gap-2 mb-2">
-              <div class="text-sm sm:text-base font-black text-slate-700">
-                打 $<span class="text-slate-900">${item.dozenPrice}</span> / 雙 $<span class="text-slate-900">${item.pairPrice}</span>
+              <div class="text-base sm:text-lg font-bold text-slate-800">
+                打 $<span class="text-xl sm:text-2xl font-black text-slate-950">${item.dozenPrice}</span> / 雙 $<span class="text-xl sm:text-2xl font-black text-slate-950">${item.pairPrice}</span>
               </div>
-              <div class="text-sm sm:text-base px-2.5 py-0.5 rounded-lg ${subtotalBadgeStyle}">
-                小計：$<span class="text-base sm:text-lg font-black">${subtotal}</span>
+              <div class="text-base sm:text-lg px-3 py-0.5 rounded-lg ${subtotalBadgeStyle}">
+                小計：$<span class="text-lg sm:text-xl font-black">${subtotal}</span>
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-              <div class="rounded-xl p-1.5 border ${boxBgStyle}">
-                <div class="text-xs sm:text-sm font-black text-slate-700 text-center mb-1">打數</div>
-                <div class="flex items-center justify-between px-1">
-                  <button onclick="changeQty('${item.id}', 'dozen', -1)" class="w-11 h-11 bg-white hover:bg-slate-200 active:bg-slate-300 text-slate-900 rounded-xl text-2xl font-black transition-all flex items-center justify-center select-none border border-slate-300 shadow-2xs active:scale-95">-</button>
-                  <input type="number" readonly value="${qty.dozen}" class="w-12 text-center text-3xl font-black bg-transparent text-slate-900 focus:outline-none">
-                  <button onclick="changeQty('${item.id}', 'dozen', 1)" class="w-11 h-11 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-white rounded-xl text-2xl font-black transition-all flex items-center justify-center select-none border border-slate-900 shadow-2xs active:scale-95">+</button>
+            <div class="grid grid-cols-2 gap-0 border-t pt-1.5 ${dividerColor}">
+              <div class="flex items-center justify-between pr-2 border-r ${dividerColor}">
+                <button onclick="changeQty('${item.id}', 'dozen', -1)" class="w-10 h-10 bg-white hover:bg-slate-200 active:bg-slate-300 text-slate-900 rounded-xl text-xl font-black transition-all flex items-center justify-center select-none border border-slate-300 shadow-2xs active:scale-95">-</button>
+                <div class="flex items-center justify-center gap-0.5 min-w-0 flex-1 px-1">
+                  <input type="number" inputmode="numeric" pattern="[0-9]*" value="${qty.dozen}" onchange="manualInputQty('${item.id}', 'dozen', this.value)" onfocus="this.select()" class="w-11 text-center text-2xl sm:text-3xl font-black bg-transparent text-slate-900 focus:outline-none p-0">
+                  <span class="text-lg sm:text-xl font-black text-slate-800 flex-shrink-0">打</span>
                 </div>
+                <button onclick="changeQty('${item.id}', 'dozen', 1)" class="w-10 h-10 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-white rounded-xl text-xl font-black transition-all flex items-center justify-center select-none border border-slate-900 shadow-2xs active:scale-95">+</button>
               </div>
 
-              <div class="rounded-xl p-1.5 border ${boxBgStyle}">
-                <div class="text-xs sm:text-sm font-black text-slate-700 text-center mb-1">雙數</div>
-                <div class="flex items-center justify-between px-1">
-                  <button onclick="changeQty('${item.id}', 'pair', -1)" class="w-11 h-11 bg-white hover:bg-slate-200 active:bg-slate-300 text-slate-900 rounded-xl text-2xl font-black transition-all flex items-center justify-center select-none border border-slate-300 shadow-2xs active:scale-95">-</button>
-                  <input type="number" readonly value="${qty.pair}" class="w-12 text-center text-3xl font-black bg-transparent text-slate-900 focus:outline-none">
-                  <button onclick="changeQty('${item.id}', 'pair', 1)" class="w-11 h-11 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-white rounded-xl text-2xl font-black transition-all flex items-center justify-center select-none border border-slate-900 shadow-2xs active:scale-95">+</button>
+              <div class="flex items-center justify-between pl-2">
+                <button onclick="changeQty('${item.id}', 'pair', -1)" class="w-10 h-10 bg-white hover:bg-slate-200 active:bg-slate-300 text-slate-900 rounded-xl text-xl font-black transition-all flex items-center justify-center select-none border border-slate-300 shadow-2xs active:scale-95">-</button>
+                <div class="flex items-center justify-center gap-0.5 min-w-0 flex-1 px-1">
+                  <input type="number" inputmode="numeric" pattern="[0-9]*" value="${qty.pair}" onchange="manualInputQty('${item.id}', 'pair', this.value)" onfocus="this.select()" class="w-11 text-center text-2xl sm:text-3xl font-black bg-transparent text-slate-900 focus:outline-none p-0">
+                  <span class="text-lg sm:text-xl font-black text-slate-800 flex-shrink-0">雙</span>
                 </div>
+                <button onclick="changeQty('${item.id}', 'pair', 1)" class="w-10 h-10 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-white rounded-xl text-xl font-black transition-all flex items-center justify-center select-none border border-slate-900 shadow-2xs active:scale-95">+</button>
               </div>
             </div>
           </div>
@@ -340,7 +361,17 @@
       let val = itemQuantities[id][type] + delta;
       if (val < 0) val = 0;
       itemQuantities[id][type] = val;
-      saveData();
+      saveDataLocally();
+      renderItems();
+      updateTotal();
+    }
+
+    function manualInputQty(id, type, val) {
+      if (!itemQuantities[id]) itemQuantities[id] = { dozen: 0, pair: 0 };
+      let num = parseInt(val, 10);
+      if (isNaN(num) || num < 0) num = 0;
+      itemQuantities[id][type] = num;
+      saveDataLocally();
       renderItems();
       updateTotal();
     }
@@ -348,7 +379,7 @@
     function clearAllQuantities() {
       if (confirm('確定要清空所有已輸入的點貨數量嗎？')) {
         itemQuantities = {};
-        saveData();
+        saveDataLocally();
         renderItems();
         updateTotal();
       }
@@ -447,27 +478,53 @@
         items: orderItems
       };
 
-      checkoutHistory.unshift(record);
-      itemQuantities = {};
-      saveData();
-      renderItems();
-      updateTotal();
-      updateHistoryBadge();
-      closeModal('summaryModal');
-      
-      openHistoryModal();
+      alert('正在將訂單同步至雲端，請稍候...');
+
+      fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+        headers: { 'X-Master-Key': API_KEY }
+      })
+      .then(res => res.json())
+      .then(data => {
+        let latestHistory = data.record || [];
+        if (!Array.isArray(latestHistory)) latestHistory = [];
+        latestHistory.unshift(record);
+        checkoutHistory = latestHistory;
+
+        return fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': API_KEY
+          },
+          body: JSON.stringify(checkoutHistory)
+        });
+      })
+      .then(() => {
+        itemQuantities = {};
+        saveDataLocally();
+        renderItems();
+        updateTotal();
+        closeModal('summaryModal');
+        openHistoryModal();
+        alert('已成功同步至雲端，其他人也能看得到了！');
+      })
+      .catch(err => {
+        console.error(err);
+        alert('結帳同步失敗，請檢查網路連線');
+      });
     }
 
     function openHistoryModal() {
-      renderHistoryList();
+      document.getElementById('historyModalContent').innerHTML = `<div class="text-center py-12 text-slate-400 font-bold text-lg">正在載入雲端紀錄...</div>`;
       document.getElementById('historyModal').classList.remove('hidden');
       document.getElementById('historyModal').classList.add('flex');
+      loadCloudHistoryModal();
     }
 
     function renderHistoryList() {
       const container = document.getElementById('historyModalContent');
       if (checkoutHistory.length === 0) {
-        container.innerHTML = `<div class="text-center py-12 text-slate-400 font-bold text-lg">尚無已結帳歷史紀錄</div>`;
+        container.innerHTML = `<div class="text-center py-12 text-slate-400 font-bold text-lg">尚無雲端歷史紀錄</div>`;
         return;
       }
 
@@ -483,7 +540,6 @@
                 <span>🗑️</span> 刪除紀錄
               </button>
             </div>
-
             <details class="group">
               <summary class="p-3.5 flex justify-between items-center cursor-pointer select-none bg-white hover:bg-amber-50/50 transition-colors">
                 <div class="flex items-center gap-2">
@@ -493,7 +549,6 @@
                 <span class="text-xs font-bold text-slate-400 group-open:hidden">點擊展開明細 ▾</span>
                 <span class="text-xs font-bold text-amber-600 hidden group-open:inline">點擊收合 ▴</span>
               </summary>
-              
               <div class="px-4 pb-3.5 pt-2 bg-slate-50/80 border-t border-slate-100 space-y-1.5">
                 ${record.items.map(item => `
                   <div class="flex justify-between items-center text-sm sm:text-base border-b border-slate-200/60 pb-1 last:border-0">
@@ -511,20 +566,11 @@
     }
 
     function deleteHistoryRecord(id) {
-      if (confirm('確定要刪除此筆已結帳紀錄嗎？')) {
+      if (confirm('確定要從雲端刪除此筆結帳紀錄嗎？')) {
         checkoutHistory = checkoutHistory.filter(r => r.id !== id);
-        saveData();
-        renderHistoryList();
-        updateHistoryBadge();
-      }
-    }
-
-    function clearAllHistory() {
-      if (confirm('確定要清空所有已結帳歷史紀錄嗎？')) {
-        checkoutHistory = [];
-        saveData();
-        renderHistoryList();
-        updateHistoryBadge();
+        saveCloudHistory(() => {
+          renderHistoryList();
+        });
       }
     }
 
@@ -568,12 +614,35 @@
       document.body.removeChild(textarea);
     }
 
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const base64 = event.target.result;
+        document.getElementById('itemImageBase64').value = base64;
+        document.getElementById('imagePreviewImg').src = base64;
+        document.getElementById('imagePreviewImg').classList.remove('hidden');
+        document.getElementById('imagePreviewPlaceholder').classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeProductImage() {
+      document.getElementById('itemImageBase64').value = '';
+      document.getElementById('itemImageFile').value = '';
+      document.getElementById('imagePreviewImg').src = '';
+      document.getElementById('imagePreviewImg').classList.add('hidden');
+      document.getElementById('imagePreviewPlaceholder').classList.remove('hidden');
+    }
+
     function openAddItemModal() {
       document.getElementById('itemModalTitle').innerText = '新增商品';
       document.getElementById('editItemId').value = '';
       document.getElementById('itemNameInput').value = '';
       document.getElementById('itemDozenPriceInput').value = '';
       document.getElementById('itemPairPriceInput').value = '';
+      removeProductImage();
       const select = document.getElementById('itemCatSelect');
       select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
       document.getElementById('itemModal').classList.remove('hidden');
@@ -589,6 +658,15 @@
       document.getElementById('itemDozenPriceInput').value = item.dozenPrice;
       document.getElementById('itemPairPriceInput').value = item.pairPrice;
       
+      if (item.image) {
+        document.getElementById('itemImageBase64').value = item.image;
+        document.getElementById('imagePreviewImg').src = item.image;
+        document.getElementById('imagePreviewImg').classList.remove('hidden');
+        document.getElementById('imagePreviewPlaceholder').classList.add('hidden');
+      } else {
+        removeProductImage();
+      }
+
       const select = document.getElementById('itemCatSelect');
       select.innerHTML = categories.map(c => `<option value="${c}" ${c === item.category ? 'selected' : ''}>${c}</option>`).join('');
       
@@ -603,6 +681,7 @@
       const category = document.getElementById('itemCatSelect').value;
       const dozenPrice = parseFloat(document.getElementById('itemDozenPriceInput').value) || 0;
       const pairPrice = parseFloat(document.getElementById('itemPairPriceInput').value) || 0;
+      const image = document.getElementById('itemImageBase64').value;
 
       if (!name) return;
 
@@ -613,12 +692,13 @@
           item.category = category;
           item.dozenPrice = dozenPrice;
           item.pairPrice = pairPrice;
+          item.image = image;
         }
       } else {
-        items.push({ id: Date.now().toString(), name, category, dozenPrice, pairPrice });
+        items.push({ id: Date.now().toString(), name, category, dozenPrice, pairPrice, image });
       }
 
-      saveData();
+      saveDataLocally();
       renderItems();
       closeModal('itemModal');
     }
@@ -627,7 +707,7 @@
       if (confirm('確定要刪除這項商品嗎？')) {
         items = items.filter(i => i.id !== id);
         delete itemQuantities[id];
-        saveData();
+        saveDataLocally();
         renderItems();
         renderItemManageList();
         updateTotal();
@@ -640,9 +720,20 @@
       const temp = items[index];
       items[index] = items[targetIndex];
       items[targetIndex] = temp;
-      saveData();
+      saveDataLocally();
       renderItems();
       renderItemManageList();
+    }
+
+    function moveCategoryOrder(index, direction) {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= categories.length) return;
+      const temp = categories[index];
+      categories[index] = categories[targetIndex];
+      categories[targetIndex] = temp;
+      saveDataLocally();
+      renderCategories();
+      renderCategoryManageList();
     }
 
     function openManageItemsModal() {
@@ -655,9 +746,15 @@
     function renderCategoryManageList() {
       const list = document.getElementById('categoryManageList');
       list.innerHTML = categories.map((cat, idx) => `
-        <div class="py-2 flex justify-between items-center text-base">
-          <span class="font-black text-slate-900">${cat}</span>
-          <button onclick="deleteCategory(${idx})" class="bg-rose-500 hover:bg-rose-600 text-white px-2.5 py-1 rounded-lg text-xs font-bold transition-all">刪除</button>
+        <div class="py-2 flex justify-between items-center text-base gap-2">
+          <input type="text" value="${cat}" onchange="renameCategory(${idx}, this.value)" class="flex-1 min-w-[100px] p-1.5 bg-white border border-slate-300 rounded-lg font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <div class="flex flex-col gap-0.5">
+              <button onclick="moveCategoryOrder(${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2 py-0.5 rounded text-xs font-black">⬆️</button>
+              <button onclick="moveCategoryOrder(${idx}, 1)" ${idx === categories.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2 py-0.5 rounded text-xs font-black">⬇️</button>
+            </div>
+            <button onclick="deleteCategory(${idx})" class="bg-rose-500 hover:bg-rose-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all">刪除</button>
+          </div>
         </div>
       `).join('');
     }
@@ -668,15 +765,33 @@
       if (val && !categories.includes(val)) {
         categories.push(val);
         input.value = '';
-        saveData();
+        saveDataLocally();
         renderCategories();
         renderCategoryManageList();
       }
     }
 
+    function renameCategory(idx, newName) {
+      newName = newName.trim();
+      if (!newName) return;
+      const oldName = categories[idx];
+      if (categories.includes(newName) && newName !== oldName) {
+        alert('此分類名稱已存在！');
+        renderCategoryManageList();
+        return;
+      }
+      categories[idx] = newName;
+      items.forEach(item => {
+        if (item.category === oldName) item.category = newName;
+      });
+      saveDataLocally();
+      renderCategories();
+      renderItems();
+    }
+
     function deleteCategory(idx) {
       categories.splice(idx, 1);
-      saveData();
+      saveDataLocally();
       renderCategories();
       renderCategoryManageList();
     }
@@ -684,10 +799,13 @@
     function renderItemManageList() {
       const list = document.getElementById('itemManageList');
       list.innerHTML = items.map((item, idx) => `
-        <div class="py-2.5 flex justify-between items-center text-sm">
-          <div class="pr-2 flex-1 min-w-0">
-            <div class="font-black text-slate-900 text-base truncate">${item.name}</div>
-            <div class="text-xs font-bold text-slate-500">${item.category} | 1打$${item.dozenPrice} / 1雙$${item.pairPrice}</div>
+        <div class="py-2.5 flex justify-between items-center text-sm gap-2">
+          <div class="pr-2 flex-1 min-w-0 flex items-center gap-2">
+            ${item.image ? `<img src="${item.image}" class="w-9 h-9 rounded-lg object-cover border border-slate-300 flex-shrink-0">` : `<div class="w-9 h-9 rounded-lg bg-slate-200 flex items-center justify-center flex-shrink-0 text-sm">📦</div>`}
+            <div class="min-w-0 flex-1">
+              <div class="font-black text-slate-900 text-base truncate">${item.name}</div>
+              <div class="text-xs font-bold text-slate-500">${item.category} | 1打$${item.dozenPrice} / 1雙$${item.pairPrice}</div>
+            </div>
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
             <div class="flex flex-col gap-0.5">

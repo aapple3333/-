@@ -762,4 +762,129 @@
 
     function moveCategoryOrder(index, direction) {
       const targetIndex = index + direction;
-      if (targetIndex < 0 || targetIndex >= categories.length) return
+      if (targetIndex < 0 || targetIndex >= categories.length) return;
+      const temp = categories[index];
+      categories[index] = categories[targetIndex];
+      categories[targetIndex] = temp;
+      syncAllToCloud(() => {
+        renderCategories();
+        renderCategoryManageList();
+      });
+    }
+
+    function openManageItemsModal() {
+      if (!verifyAdmin()) return;
+      switchManageTab('category');
+      renderCategoryManageList();
+      renderItemManageList();
+      document.getElementById('manageItemsModal').classList.remove('hidden');
+      document.getElementById('manageItemsModal').classList.add('flex');
+    }
+
+    function switchManageTab(tab) {
+      const catBtn = document.getElementById('tabCategoryBtn');
+      const itemBtn = document.getElementById('tabItemBtn');
+      const catSec = document.getElementById('manageCategorySection');
+      const itemSec = document.getElementById('manageItemSection');
+
+      if (tab === 'category') {
+        catBtn.className = "flex-1 py-2.5 rounded-xl font-black text-sm transition-all bg-amber-500 text-slate-950 shadow-xs";
+        itemBtn.className = "flex-1 py-2.5 rounded-xl font-black text-sm transition-all bg-slate-200 text-slate-700 hover:bg-slate-300";
+        catSec.classList.remove('hidden');
+        itemSec.classList.add('hidden');
+      } else {
+        itemBtn.className = "flex-1 py-2.5 rounded-xl font-black text-sm transition-all bg-amber-500 text-slate-950 shadow-xs";
+        catBtn.className = "flex-1 py-2.5 rounded-xl font-black text-sm transition-all bg-slate-200 text-slate-700 hover:bg-slate-300";
+        itemSec.classList.remove('hidden');
+        catSec.classList.add('hidden');
+      }
+    }
+
+    function renderCategoryManageList() {
+      const list = document.getElementById('categoryManageList');
+      list.innerHTML = categories.map((cat, idx) => `
+        <div class="py-2.5 flex justify-between items-center text-base gap-2">
+          <input type="text" value="${cat}" onchange="renameCategory(${idx}, this.value)" class="flex-1 min-w-[100px] p-2 bg-white border border-slate-300 rounded-xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <div class="flex flex-col gap-0.5">
+              <button onclick="moveCategoryOrder(${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-0.5 rounded text-xs font-black">⬆️</button>
+              <button onclick="moveCategoryOrder(${idx}, 1)" ${idx === categories.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-0.5 rounded text-xs font-black">⬇️</button>
+            </div>
+            <button onclick="deleteCategory(${idx})" class="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all">刪除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addCategory() {
+      const input = document.getElementById('newCatInput');
+      const val = input.value.trim();
+      if (val && !categories.includes(val)) {
+        categories.push(val);
+        input.value = '';
+        syncAllToCloud(() => {
+          renderCategories();
+          renderCategoryManageList();
+        });
+      }
+    }
+
+    function renameCategory(idx, newName) {
+      newName = newName.trim();
+      if (!newName) return;
+      const oldName = categories[idx];
+      if (categories.includes(newName) && newName !== oldName) {
+        alert('此分類名稱已存在！');
+        renderCategoryManageList();
+        return;
+      }
+      categories[idx] = newName;
+      items.forEach(item => {
+        if (item.category === oldName) item.category = newName;
+      });
+      syncAllToCloud(() => {
+        renderCategories();
+        renderItems();
+      });
+    }
+
+    function deleteCategory(idx) {
+      categories.splice(idx, 1);
+      syncAllToCloud(() => {
+        renderCategories();
+        renderCategoryManageList();
+      });
+    }
+
+    function renderItemManageList() {
+      const list = document.getElementById('itemManageList');
+      list.innerHTML = items.map((item, idx) => `
+        <div class="py-3 flex justify-between items-center text-sm gap-2">
+          <div class="pr-2 flex-1 min-w-0 flex items-center gap-2.5">
+            ${item.image ? `<img src="${item.image}" class="w-10 h-10 rounded-xl object-cover border border-slate-300 flex-shrink-0">` : `<div class="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center flex-shrink-0 text-base">📦</div>`}
+            <div class="min-w-0 flex-1">
+              <div class="font-black text-slate-900 text-base truncate">${item.name}</div>
+              <div class="text-xs font-bold text-slate-500">${item.category} | 1打$${item.dozenPrice} / 1雙$${item.pairPrice}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <div class="flex flex-col gap-0.5">
+              <button onclick="moveItemOrder(${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-0.5 rounded text-xs font-black">⬆️</button>
+              <button onclick="moveItemOrder(${idx}, 1)" ${idx === items.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-0.5 rounded text-xs font-black">⬇️</button>
+            </div>
+            <button onclick="openEditItemModal('${item.id}')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">編輯</button>
+            <button onclick="deleteItem('${item.id}')" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all">刪除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('flex');
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    init();
+  </script>
+</body>
+</html>

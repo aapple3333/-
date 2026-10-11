@@ -146,7 +146,6 @@
     </div>
   </div>
 
-  <!-- 管理視窗（分頁設計） -->
   <div id="manageItemsModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 hidden items-center justify-center p-3.5">
     <div class="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
       <div class="bg-slate-900 text-amber-400 px-5 py-3.5 flex justify-between items-center flex-shrink-0">
@@ -154,15 +153,12 @@
         <button onclick="closeModal('manageItemsModal')" class="text-amber-400 hover:text-white text-2xl font-bold p-1 transition-colors">✕</button>
       </div>
       
-      <!-- 分頁切換按鈕列 -->
       <div class="flex border-b border-slate-200 bg-slate-100 p-1.5 gap-1.5 flex-shrink-0">
         <button id="tabCategoryBtn" onclick="switchManageTab('category')" class="flex-1 py-2.5 rounded-xl font-black text-sm transition-all bg-amber-500 text-slate-950 shadow-xs">📁 分類管理</button>
         <button id="tabItemBtn" onclick="switchManageTab('item')" class="flex-1 py-2.5 rounded-xl font-black text-sm transition-all bg-slate-200 text-slate-700 hover:bg-slate-300">📦 商品管理</button>
       </div>
 
-      <!-- 分頁內容容器 -->
       <div class="p-4 sm:p-5 overflow-y-auto flex-1">
-        <!-- 分類管理頁面 -->
         <div id="manageCategorySection" class="space-y-3">
           <div class="flex justify-between items-center">
             <h4 class="font-black text-slate-900 text-base">分類管理 (可改名與排序)</h4>
@@ -175,7 +171,6 @@
           <div id="categoryManageList" class="divide-y divide-slate-200 bg-slate-50 p-2.5 rounded-xl border border-slate-200"></div>
         </div>
 
-        <!-- 商品管理頁面 -->
         <div id="manageItemSection" class="space-y-3 hidden">
           <div class="flex justify-between items-center">
             <h4 class="font-black text-slate-900 text-base">商品排序與清單</h4>
@@ -190,6 +185,7 @@
   <script>
     const BIN_ID = '6acb8171ac6210605a27bc41';
     const API_KEY = '$2a$10$CiO6ioiPvSncqvUg6oUNl.q.3OKFbPu5mxjpFW7pZ/kR.lCqvng1C';
+    const ADMIN_PWD = '922560';
 
     const defaultItems = [
       { id: '1', name: '足立康一般', category: '足立康', dozenPrice: 660, pairPrice: 55, image: '' },
@@ -214,6 +210,16 @@
     let currentCategory = 'all';
     let searchQuery = '';
     let itemQuantities = JSON.parse(localStorage.getItem('stock_quantities')) || {};
+
+    function verifyAdmin() {
+      const pwd = prompt('請輸入管理員密碼：');
+      if (pwd === null) return false;
+      if (pwd !== ADMIN_PWD) {
+        alert('密碼錯誤！');
+        return false;
+      }
+      return true;
+    }
 
     function init() {
       loadCloudData();
@@ -590,6 +596,7 @@
     }
 
     function deleteHistoryRecord(id) {
+      if (!verifyAdmin()) return;
       if (confirm('確定要從雲端刪除此筆結帳紀錄嗎？')) {
         checkoutHistory = checkoutHistory.filter(r => r.id !== id);
         syncAllToCloud(() => {
@@ -661,6 +668,7 @@
     }
 
     function openAddItemModal() {
+      if (!verifyAdmin()) return;
       document.getElementById('itemModalTitle').innerText = '新增商品';
       document.getElementById('editItemId').value = '';
       document.getElementById('itemNameInput').value = '';
@@ -754,129 +762,4 @@
 
     function moveCategoryOrder(index, direction) {
       const targetIndex = index + direction;
-      if (targetIndex < 0 || targetIndex >= categories.length) return;
-      const temp = categories[index];
-      categories[index] = categories[targetIndex];
-      categories[targetIndex] = temp;
-      syncAllToCloud(() => {
-        renderCategories();
-        renderCategoryManageList();
-      });
-    }
-
-    function openManageItemsModal() {
-      switchManageTab('category'); // 預設打開分類管理分頁
-      renderCategoryManageList();
-      renderItemManageList();
-      document.getElementById('manageItemsModal').classList.remove('hidden');
-      document.getElementById('manageItemsModal').classList.add('flex');
-    }
-
-    // 管理視窗分頁切換邏輯
-    function switchManageTab(tab) {
-      const catBtn = document.getElementById('tabCategoryBtn');
-      const itemBtn = document.getElementById('tabItemBtn');
-      const catSec = document.getElementById('manageCategorySection');
-      const itemSec = document.getElementById('manageItemSection');
-
-      if (tab === 'category') {
-        catBtn.className = "flex-1 py-2.5 rounded-xl font-black text-sm transition-all bg-amber-500 text-slate-950 shadow-xs";
-        itemBtn.className = "flex-1 py-2.5 rounded-xl font-black text-sm transition-all bg-slate-200 text-slate-700 hover:bg-slate-300";
-        catSec.classList.remove('hidden');
-        itemSec.classList.add('hidden');
-      } else {
-        itemBtn.className = "flex-1 py-2.5 rounded-xl font-black text-sm transition-all bg-amber-500 text-slate-950 shadow-xs";
-        catBtn.className = "flex-1 py-2.5 rounded-xl font-black text-sm transition-all bg-slate-200 text-slate-700 hover:bg-slate-300";
-        itemSec.classList.remove('hidden');
-        catSec.classList.add('hidden');
-      }
-    }
-
-    function renderCategoryManageList() {
-      const list = document.getElementById('categoryManageList');
-      list.innerHTML = categories.map((cat, idx) => `
-        <div class="py-2.5 flex justify-between items-center text-base gap-2">
-          <input type="text" value="${cat}" onchange="renameCategory(${idx}, this.value)" class="flex-1 min-w-[100px] p-2 bg-white border border-slate-300 rounded-xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
-          <div class="flex items-center gap-1.5 flex-shrink-0">
-            <div class="flex flex-col gap-0.5">
-              <button onclick="moveCategoryOrder(${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-0.5 rounded text-xs font-black">⬆️</button>
-              <button onclick="moveCategoryOrder(${idx}, 1)" ${idx === categories.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-0.5 rounded text-xs font-black">⬇️</button>
-            </div>
-            <button onclick="deleteCategory(${idx})" class="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all">刪除</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function addCategory() {
-      const input = document.getElementById('newCatInput');
-      const val = input.value.trim();
-      if (val && !categories.includes(val)) {
-        categories.push(val);
-        input.value = '';
-        syncAllToCloud(() => {
-          renderCategories();
-          renderCategoryManageList();
-        });
-      }
-    }
-
-    function renameCategory(idx, newName) {
-      newName = newName.trim();
-      if (!newName) return;
-      const oldName = categories[idx];
-      if (categories.includes(newName) && newName !== oldName) {
-        alert('此分類名稱已存在！');
-        renderCategoryManageList();
-        return;
-      }
-      categories[idx] = newName;
-      items.forEach(item => {
-        if (item.category === oldName) item.category = newName;
-      });
-      syncAllToCloud(() => {
-        renderCategories();
-        renderItems();
-      });
-    }
-
-    function deleteCategory(idx) {
-      categories.splice(idx, 1);
-      syncAllToCloud(() => {
-        renderCategories();
-        renderCategoryManageList();
-      });
-    }
-
-    function renderItemManageList() {
-      const list = document.getElementById('itemManageList');
-      list.innerHTML = items.map((item, idx) => `
-        <div class="py-3 flex justify-between items-center text-sm gap-2">
-          <div class="pr-2 flex-1 min-w-0 flex items-center gap-2.5">
-            ${item.image ? `<img src="${item.image}" class="w-10 h-10 rounded-xl object-cover border border-slate-300 flex-shrink-0">` : `<div class="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center flex-shrink-0 text-base">📦</div>`}
-            <div class="min-w-0 flex-1">
-              <div class="font-black text-slate-900 text-base truncate">${item.name}</div>
-              <div class="text-xs font-bold text-slate-500">${item.category} | 1打$${item.dozenPrice} / 1雙$${item.pairPrice}</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-1.5 flex-shrink-0">
-            <div class="flex flex-col gap-0.5">
-              <button onclick="moveItemOrder(${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-0.5 rounded text-xs font-black">⬆️</button>
-              <button onclick="moveItemOrder(${idx}, 1)" ${idx === items.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-0.5 rounded text-xs font-black">⬇️</button>
-            </div>
-            <button onclick="openEditItemModal('${item.id}')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">編輯</button>
-            <button onclick="deleteItem('${item.id}')" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all">刪除</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).classList.remove('flex');
-      document.getElementById(id).classList.add('hidden');
-    }
-
-    init();
-  </script>
-</body>
-</html>
+      if (targetIndex < 0 || targetIndex >= categories.length) return

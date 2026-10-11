@@ -204,9 +204,11 @@
 
     const defaultCategories = ['足立康', 'FOOTER', '袖套類', '一般襪類', '特別款', '雜貨毛巾'];
 
-    let categories = defaultCategories;
-    let items = defaultItems;
-    let checkoutHistory = [];
+    // 優先從本地快取讀取，實現秒開
+    let categories = JSON.parse(localStorage.getItem('cached_categories')) || defaultCategories;
+    let items = JSON.parse(localStorage.getItem('cached_items')) || defaultItems;
+    let checkoutHistory = JSON.parse(localStorage.getItem('cached_history')) || [];
+    
     let currentCategory = 'all';
     let searchQuery = '';
     let itemQuantities = JSON.parse(localStorage.getItem('stock_quantities')) || {};
@@ -222,6 +224,11 @@
     }
 
     function init() {
+      // 先用本地快取秒渲染畫面
+      renderCategories();
+      renderItems();
+      updateTotal();
+      // 背景非同步向雲端抓取最新資料
       loadCloudData();
     }
 
@@ -240,6 +247,11 @@
           checkoutHistory = cloudData;
         }
 
+        // 更新本地快取
+        localStorage.setItem('cached_categories', JSON.stringify(categories));
+        localStorage.setItem('cached_items', JSON.stringify(items));
+        localStorage.setItem('cached_history', JSON.stringify(checkoutHistory));
+
         renderCategories();
         renderItems();
         updateTotal();
@@ -250,10 +262,7 @@
         }
       })
       .catch(err => {
-        console.error('載入雲端資料失敗', err);
-        renderCategories();
-        renderItems();
-        updateTotal();
+        console.error('背景同步雲端資料失敗', err);
       });
     }
 
@@ -263,6 +272,11 @@
         items: items,
         history: checkoutHistory
       };
+
+      // 同時更新本地快取
+      localStorage.setItem('cached_categories', JSON.stringify(categories));
+      localStorage.setItem('cached_items', JSON.stringify(items));
+      localStorage.setItem('cached_history', JSON.stringify(checkoutHistory));
 
       fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
         method: 'PUT',

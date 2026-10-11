@@ -211,15 +211,21 @@
     let currentCategory = 'all';
     let searchQuery = '';
     let itemQuantities = JSON.parse(localStorage.getItem('stock_quantities')) || {};
-    let currentManageTab = 'category'; // 記錄目前管理頁面停留的分頁
+    let currentManageTab = 'category';
 
     function verifyAdmin() {
+      // 檢查工作階段是否已經驗證過密碼
+      if (sessionStorage.getItem('admin_authenticated') === 'true') {
+        return true;
+      }
       const pwd = prompt('請輸入管理員密碼：');
       if (pwd === null) return false;
       if (pwd !== ADMIN_PWD) {
         alert('密碼錯誤！');
         return false;
       }
+      // 驗證成功，記錄在 sessionStorage 中（分頁關閉後失效）
+      sessionStorage.setItem('admin_authenticated', 'true');
       return true;
     }
 
@@ -674,7 +680,7 @@
       document.getElementById('itemImageFile').value = '';
       document.getElementById('imagePreviewImg').src = '';
       document.getElementById('imagePreviewImg').classList.add('hidden');
-      document.getElementById('imagePreviewPlaceholder').classList.add('hidden');
+      document.getElementById('imagePreviewPlaceholder').classList.remove('hidden');
     }
 
     function openAddItemModal() {
@@ -743,7 +749,6 @@
       syncAllToCloud(() => {
         renderItems();
         closeModal('itemModal');
-        // 儲存完成後，重新打開管理視窗並回到商品管理分頁
         openManageItemsModal();
         switchManageTab(currentManageTab);
       });
@@ -795,7 +800,7 @@
     }
 
     function switchManageTab(tab) {
-      currentManageTab = tab; // 記錄當前分頁
+      currentManageTab = tab;
       const catBtn = document.getElementById('tabCategoryBtn');
       const itemBtn = document.getElementById('tabItemBtn');
       const catSec = document.getElementById('manageCategorySection');

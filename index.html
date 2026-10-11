@@ -92,7 +92,7 @@
         <div class="text-center py-12 text-slate-400 font-bold text-lg">正在載入雲端紀錄...</div>
       </div>
       <div class="p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-        <button onclick="loadCloudHistoryModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1">🔄 重新整理</button>
+        <button onclick="loadCloudData()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1">🔄 重新整理</button>
         <button onclick="closeModal('historyModal')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl text-sm">關閉</button>
       </div>
     </div>
@@ -141,7 +141,7 @@
         </div>
       </div>
       <div class="p-3.5 bg-slate-50 border-t border-slate-200">
-        <button onclick="saveItem()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3 rounded-xl font-black text-lg shadow-sm transition-all active:scale-95">儲存商品</button>
+        <button onclick="saveItem()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 py-3 rounded-xl font-black text-lg shadow-sm transition-all active:scale-95">儲存商品並同步雲端</button>
       </div>
     </div>
   </div>
@@ -195,52 +195,69 @@
       { id: '12', name: '運動毛巾', category: '雜貨毛巾', dozenPrice: 360, pairPrice: 30, image: '' }
     ];
 
-    let categories = JSON.parse(localStorage.getItem('stock_categories')) || ['足立康', 'FOOTER', '袖套類', '一般襪類', '特別款', '雜貨毛巾'];
-    let items = JSON.parse(localStorage.getItem('stock_items')) || defaultItems;
+    const defaultCategories = ['足立康', 'FOOTER', '袖套類', '一般襪類', '特別款', '雜貨毛巾'];
+
+    let categories = defaultCategories;
+    let items = defaultItems;
+    let checkoutHistory = [];
     let currentCategory = 'all';
     let searchQuery = '';
     let itemQuantities = JSON.parse(localStorage.getItem('stock_quantities')) || {};
-    let checkoutHistory = [];
 
     function init() {
-      renderCategories();
-      renderItems();
-      updateTotal();
-      loadCloudHistoryModal();
+      loadCloudData();
     }
 
-    function saveDataLocally() {
-      localStorage.setItem('stock_categories', JSON.stringify(categories));
-      localStorage.setItem('stock_items', JSON.stringify(items));
-      localStorage.setItem('stock_quantities', JSON.stringify(itemQuantities));
-    }
-
-    function loadCloudHistoryModal() {
+    // 從雲端讀取所有資料 (包含商品、分類、歷史紀錄)
+    function loadCloudData() {
       fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
         headers: { 'X-Master-Key': API_KEY }
       })
       .then(res => res.json())
       .then(data => {
-        checkoutHistory = data.record || [];
-        if (!Array.isArray(checkoutHistory)) checkoutHistory = [];
+        const cloudData = data.record;
+        // 如果雲端已經有完整結構
+        if (cloudData && typeof cloudData === 'object' && !Array.isArray(cloudData)) {
+          categories = cloudData.categories || defaultCategories;
+          items = cloudData.items || defaultItems;
+          checkoutHistory = cloudData.history || [];
+        } else if (Array.isArray(cloudData)) {
+          // 相容舊版只有歷史陣列的情況
+          checkoutHistory = cloudData;
+        }
+
+        renderCategories();
+        renderItems();
+        updateTotal();
+
         const container = document.getElementById('historyModalContent');
         if (container && !document.getElementById('historyModal').classList.contains('hidden')) {
           renderHistoryList();
         }
       })
       .catch(err => {
-        console.error('載入雲端紀錄失敗', err);
+        console.error('載入雲端資料失敗', err);
+        renderCategories();
+        renderItems();
+        updateTotal();
       });
     }
 
-    function saveCloudHistory(callback) {
+    // 將所有資料 (商品、分類、歷史紀錄) 同步寫入雲端
+    function syncAllToCloud(callback) {
+      const payload = {
+        categories: categories,
+        items: items,
+        history: checkoutHistory
+      };
+
       fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'X-Master-Key': API_KEY
         },
-        body: JSON.stringify(checkoutHistory)
+        body: JSON.stringify(payload)
       })
       .then(res => res.json())
       .then(() => {
@@ -250,6 +267,10 @@
         console.error('同步至雲端失敗', err);
         alert('雲端同步失敗，請檢查網路連線');
       });
+    }
+
+    function saveDataLocally() {
+      localStorage.setItem('stock_quantities', JSON.stringify(itemQuantities));
     }
 
     function renderCategories() {
@@ -480,37 +501,34 @@
 
       alert('正在將訂單同步至雲端，請稍候...');
 
+      // 先抓最新資料再插入紀錄
       fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
         headers: { 'X-Master-Key': API_KEY }
       })
       .then(res => res.json())
       .then(data => {
-        let latestHistory = data.record || [];
-        if (!Array.isArray(latestHistory)) latestHistory = [];
-        latestHistory.unshift(record);
-        checkoutHistory = latestHistory;
+        const cloudData = data.record;
+        if (cloudData && !Array.isArray(cloudData)) {
+          checkoutHistory = cloudData.history || [];
+        } else if (Array.isArray(cloudData)) {
+          checkoutHistory = cloudData;
+        }
 
-        return fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': API_KEY
-          },
-          body: JSON.stringify(checkoutHistory)
+        checkoutHistory.unshift(record);
+
+        syncAllToCloud(() => {
+          itemQuantities = {};
+          saveDataLocally();
+          renderItems();
+          updateTotal();
+          closeModal('summaryModal');
+          openHistoryModal();
+          alert('已成功同步至雲端！');
         });
-      })
-      .then(() => {
-        itemQuantities = {};
-        saveDataLocally();
-        renderItems();
-        updateTotal();
-        closeModal('summaryModal');
-        openHistoryModal();
-        alert('已成功同步至雲端，其他人也能看得到了！');
       })
       .catch(err => {
         console.error(err);
-        alert('結帳同步失敗，請檢查網路連線');
+        alert('結帳同步失敗');
       });
     }
 
@@ -518,7 +536,7 @@
       document.getElementById('historyModalContent').innerHTML = `<div class="text-center py-12 text-slate-400 font-bold text-lg">正在載入雲端紀錄...</div>`;
       document.getElementById('historyModal').classList.remove('hidden');
       document.getElementById('historyModal').classList.add('flex');
-      loadCloudHistoryModal();
+      loadCloudData();
     }
 
     function renderHistoryList() {
@@ -568,7 +586,7 @@
     function deleteHistoryRecord(id) {
       if (confirm('確定要從雲端刪除此筆結帳紀錄嗎？')) {
         checkoutHistory = checkoutHistory.filter(r => r.id !== id);
-        saveCloudHistory(() => {
+        syncAllToCloud(() => {
           renderHistoryList();
         });
       }
@@ -698,19 +716,21 @@
         items.push({ id: Date.now().toString(), name, category, dozenPrice, pairPrice, image });
       }
 
-      saveDataLocally();
-      renderItems();
-      closeModal('itemModal');
+      syncAllToCloud(() => {
+        renderItems();
+        closeModal('itemModal');
+      });
     }
 
     function deleteItem(id) {
       if (confirm('確定要刪除這項商品嗎？')) {
         items = items.filter(i => i.id !== id);
         delete itemQuantities[id];
-        saveDataLocally();
-        renderItems();
-        renderItemManageList();
-        updateTotal();
+        syncAllToCloud(() => {
+          renderItems();
+          renderItemManageList();
+          updateTotal();
+        });
       }
     }
 
@@ -720,9 +740,10 @@
       const temp = items[index];
       items[index] = items[targetIndex];
       items[targetIndex] = temp;
-      saveDataLocally();
-      renderItems();
-      renderItemManageList();
+      syncAllToCloud(() => {
+        renderItems();
+        renderItemManageList();
+      });
     }
 
     function moveCategoryOrder(index, direction) {
@@ -731,9 +752,10 @@
       const temp = categories[index];
       categories[index] = categories[targetIndex];
       categories[targetIndex] = temp;
-      saveDataLocally();
-      renderCategories();
-      renderCategoryManageList();
+      syncAllToCloud(() => {
+        renderCategories();
+        renderCategoryManageList();
+      });
     }
 
     function openManageItemsModal() {
@@ -765,9 +787,10 @@
       if (val && !categories.includes(val)) {
         categories.push(val);
         input.value = '';
-        saveDataLocally();
-        renderCategories();
-        renderCategoryManageList();
+        syncAllToCloud(() => {
+          renderCategories();
+          renderCategoryManageList();
+        });
       }
     }
 
@@ -784,16 +807,18 @@
       items.forEach(item => {
         if (item.category === oldName) item.category = newName;
       });
-      saveDataLocally();
-      renderCategories();
-      renderItems();
+      syncAllToCloud(() => {
+        renderCategories();
+        renderItems();
+      });
     }
 
     function deleteCategory(idx) {
       categories.splice(idx, 1);
-      saveDataLocally();
-      renderCategories();
-      renderCategoryManageList();
+      syncAllToCloud(() => {
+        renderCategories();
+        renderCategoryManageList();
+      });
     }
 
     function renderItemManageList() {

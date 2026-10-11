@@ -125,7 +125,7 @@
           </div>
         </div>
         <div>
-          <label class="block text-sm font-black text-slate-800 mb-1">商品圖片 (可自訂大小與裁切)</label>
+          <label class="block text-sm font-black text-slate-800 mb-1">商品圖片 (完整讀取與縮放裁切)</label>
           <div class="flex items-center gap-3">
             <div id="imagePreviewContainer" class="w-14 h-14 bg-slate-100 border border-slate-300 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
               <span class="text-2xl" id="imagePreviewPlaceholder">📦</span>
@@ -155,7 +155,7 @@
       </div>
       <div class="p-4 flex flex-col items-center gap-3">
         <div class="relative w-64 h-64 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center border-2 border-amber-500 shadow-inner">
-          <canvas id="cropCanvas" class="cursor-grab active:cursor-grabbing"></canvas>
+          <canvas id="cropCanvas" class="cursor-grab active:cursor-grabbing touch-none"></canvas>
           <div class="absolute inset-0 border-2 border-amber-400/80 pointer-events-none rounded-lg"></div>
         </div>
         <div class="w-full space-y-2">
@@ -163,8 +163,8 @@
             <span>縮放大小：</span>
             <span id="scaleVal">100%</span>
           </div>
-          <input type="range" id="cropScaleRange" min="50" max="250" value="100" class="w-full accent-amber-500 cursor-pointer" oninput="updateCropView()">
-          <div class="text-center text-xs font-bold text-slate-400">在預覽框內按住可拖曳圖片位置</div>
+          <input type="range" id="cropScaleRange" min="20" max="300" value="100" class="w-full accent-amber-500 cursor-pointer" oninput="updateCropView()">
+          <div class="text-center text-xs font-bold text-slate-400">滑鼠/手指按住圖片可隨意拖曳位置</div>
         </div>
       </div>
       <div class="p-3 bg-slate-50 border-t border-slate-200 flex gap-2">
@@ -245,6 +245,7 @@
     let cropImg = null;
     let cropOffsetX = 0;
     let cropOffsetY = 0;
+    let baseFitScale = 1; // 圖片完全放入框內的基本縮放比
     let isDragging = false;
     let startX = 0, startY = 0;
 
@@ -694,7 +695,7 @@
       document.body.removeChild(textarea);
     }
 
-    // 互動式裁切功能邏輯
+    // 完美比例置中繪製裁切邏輯
     function openCropModal(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -706,6 +707,9 @@
           cropImg = img;
           cropOffsetX = 0;
           cropOffsetY = 0;
+          
+          // 計算完整納入 256x256 畫布的初始比例
+          baseFitScale = Math.min(256 / img.width, 256 / img.height);
           document.getElementById('cropScaleRange').value = 100;
           
           const modal = document.getElementById('cropModal');
@@ -717,7 +721,7 @@
         img.src = event.target.result;
       };
       reader.readAsDataURL(file);
-      e.target.value = ''; // 清空以允許重複選同一張圖
+      e.target.value = '';
     }
 
     function setupCropCanvasEvents() {
@@ -725,7 +729,6 @@
       canvas.width = 256;
       canvas.height = 256;
 
-      // 避免重複綁定監聽
       canvas.onmousedown = startDrag;
       canvas.ontouchstart = startDragTouch;
       window.onmousemove = drag;
@@ -770,31 +773,31 @@
       if (!cropImg) return;
       const canvas = document.getElementById('cropCanvas');
       const ctx = canvas.getContext('2d');
-      const scale = parseInt(document.getElementById('cropScaleRange').value, 10) / 100;
-      document.getElementById('scaleVal').innerText = `${Math.round(scale * 100)}%`;
+      const userScaleMultiplier = parseInt(document.getElementById('cropScaleRange').value, 10) / 100;
+      document.getElementById('scaleVal').innerText = `${Math.round(userScaleMultiplier * 100)}%`;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
+      // 移動至畫布中央 + 手動拖曳位移
       ctx.translate(canvas.width / 2 + cropOffsetX, canvas.height / 2 + cropOffsetY);
-      ctx.scale(scale, scale);
 
-      let w = cropImg.width;
-      let h = cropImg.height;
-      let minDim = Math.min(w, h);
-      
-      // 置中繪製
-      ctx.drawImage(cropImg, -minDim / 2, -minDim / 2, minDim, minDim, -128, -128, 256, 256);
+      // 套用基本縮放比 * 使用者手動調節比
+      const finalScale = baseFitScale * userScaleMultiplier;
+      const drawWidth = cropImg.width * finalScale;
+      const drawHeight = cropImg.height * finalScale;
+
+      ctx.drawImage(cropImg, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
       ctx.restore();
     }
 
     function confirmCrop() {
       const canvas = document.getElementById('cropCanvas');
-      // 輸出最終高壓縮正方形小圖 (300x300)
+      // 輸出 250x250 正方形小圖
       const outputCanvas = document.createElement('canvas');
-      outputCanvas.width = 300;
-      outputCanvas.height = 300;
+      outputCanvas.width = 250;
+      outputCanvas.height = 250;
       const outCtx = outputCanvas.getContext('2d');
-      outCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, 300, 300);
+      outCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, 250, 250);
 
       const base64 = outputCanvas.toDataURL('image/jpeg', 0.8);
       document.getElementById('itemImageBase64').value = base64;
@@ -816,7 +819,7 @@
       document.getElementById('itemImageFile').value = '';
       document.getElementById('imagePreviewImg').src = '';
       document.getElementById('imagePreviewImg').classList.add('hidden');
-      document.getElementById('imagePreviewPlaceholder').classList.add('hidden');
+      document.getElementById('imagePreviewPlaceholder').classList.remove('hidden');
     }
 
     function openAddItemModal() {

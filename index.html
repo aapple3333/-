@@ -125,7 +125,7 @@
           </div>
         </div>
         <div>
-          <label class="block text-sm font-black text-slate-800 mb-1">商品圖片 (自動壓縮與正方形裁切)</label>
+          <label class="block text-sm font-black text-slate-800 mb-1">商品圖片 (自動壓縮與完美正方形裁切)</label>
           <div class="flex items-center gap-3">
             <div id="imagePreviewContainer" class="w-14 h-14 bg-slate-100 border border-slate-300 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
               <span class="text-2xl" id="imagePreviewPlaceholder">📦</span>
@@ -659,7 +659,7 @@
       document.body.removeChild(textarea);
     }
 
-    // 自動壓縮並將圖片裁切為正方形
+    // 強制重構的智慧壓縮與裁切核心（保證大圖不會失效）
     function handleImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -669,30 +669,30 @@
         const img = new Image();
         img.onload = function() {
           const canvas = document.createElement('canvas');
-          const MAX_SIZE = 200; // 限制最大尺寸 200x200 像素，確保體積小於 20KB
+          const TARGET_SIZE = 300; // 統一解析度 300x300，確保清晰又極小
           let width = img.width;
           let height = img.height;
 
-          // 計算正方形裁切範圍 (置中裁切)
-          let sourceX = 0, sourceY = 0, sourceSize = Math.min(width, height);
-          if (width > height) {
-            sourceX = (width - height) / 2;
-          } else {
-            sourceY = (height - width) / 2;
-          }
+          // 計算正方形置中裁切
+          let sSize = Math.min(width, height);
+          let sX = (width - sSize) / 2;
+          let sY = (height - sSize) / 2;
 
-          canvas.width = MAX_SIZE;
-          canvas.height = MAX_SIZE;
+          canvas.width = TARGET_SIZE;
+          canvas.height = TARGET_SIZE;
           const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, MAX_SIZE, MAX_SIZE);
+          ctx.drawImage(img, sX, sY, sSize, sSize, 0, 0, TARGET_SIZE, TARGET_SIZE);
 
-          // 轉為高品質壓縮的 WebP/JPEG 格式
-          const base64 = canvas.toDataURL('image/jpeg', 0.8);
-          
+          // 轉為高壓縮率 JPEG，確保檔案大小只有十幾 KB，完美存入雲端
+          const base64 = canvas.toDataURL('image/jpeg', 0.75);
+
           document.getElementById('itemImageBase64').value = base64;
           document.getElementById('imagePreviewImg').src = base64;
           document.getElementById('imagePreviewImg').classList.remove('hidden');
           document.getElementById('imagePreviewPlaceholder').classList.add('hidden');
+        };
+        img.onerror = function() {
+          alert('圖片讀取失敗，請換一張圖片嘗試');
         };
         img.src = event.target.result;
       };

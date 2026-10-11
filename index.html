@@ -204,7 +204,6 @@
 
     const defaultCategories = ['足立康', 'FOOTER', '袖套類', '一般襪類', '特別款', '雜貨毛巾'];
 
-    // 優先從本地快取讀取，實現秒開
     let categories = JSON.parse(localStorage.getItem('cached_categories')) || defaultCategories;
     let items = JSON.parse(localStorage.getItem('cached_items')) || defaultItems;
     let checkoutHistory = JSON.parse(localStorage.getItem('cached_history')) || [];
@@ -212,6 +211,7 @@
     let currentCategory = 'all';
     let searchQuery = '';
     let itemQuantities = JSON.parse(localStorage.getItem('stock_quantities')) || {};
+    let currentManageTab = 'category'; // 記錄目前管理頁面停留的分頁
 
     function verifyAdmin() {
       const pwd = prompt('請輸入管理員密碼：');
@@ -224,11 +224,9 @@
     }
 
     function init() {
-      // 先用本地快取秒渲染畫面
       renderCategories();
       renderItems();
       updateTotal();
-      // 背景非同步向雲端抓取最新資料
       loadCloudData();
     }
 
@@ -247,7 +245,6 @@
           checkoutHistory = cloudData;
         }
 
-        // 更新本地快取
         localStorage.setItem('cached_categories', JSON.stringify(categories));
         localStorage.setItem('cached_items', JSON.stringify(items));
         localStorage.setItem('cached_history', JSON.stringify(checkoutHistory));
@@ -273,7 +270,6 @@
         history: checkoutHistory
       };
 
-      // 同時更新本地快取
       localStorage.setItem('cached_categories', JSON.stringify(categories));
       localStorage.setItem('cached_items', JSON.stringify(items));
       localStorage.setItem('cached_history', JSON.stringify(checkoutHistory));
@@ -678,7 +674,7 @@
       document.getElementById('itemImageFile').value = '';
       document.getElementById('imagePreviewImg').src = '';
       document.getElementById('imagePreviewImg').classList.add('hidden');
-      document.getElementById('imagePreviewPlaceholder').classList.remove('hidden');
+      document.getElementById('imagePreviewPlaceholder').classList.add('hidden');
     }
 
     function openAddItemModal() {
@@ -747,6 +743,9 @@
       syncAllToCloud(() => {
         renderItems();
         closeModal('itemModal');
+        // 儲存完成後，重新打開管理視窗並回到商品管理分頁
+        openManageItemsModal();
+        switchManageTab(currentManageTab);
       });
     }
 
@@ -788,7 +787,7 @@
 
     function openManageItemsModal() {
       if (!verifyAdmin()) return;
-      switchManageTab('category');
+      switchManageTab(currentManageTab);
       renderCategoryManageList();
       renderItemManageList();
       document.getElementById('manageItemsModal').classList.remove('hidden');
@@ -796,6 +795,7 @@
     }
 
     function switchManageTab(tab) {
+      currentManageTab = tab; // 記錄當前分頁
       const catBtn = document.getElementById('tabCategoryBtn');
       const itemBtn = document.getElementById('tabItemBtn');
       const catSec = document.getElementById('manageCategorySection');

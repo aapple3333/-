@@ -148,7 +148,7 @@
 
   <div id="manageItemsModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 hidden items-center justify-center p-3.5">
     <div class="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
-      <div class="bg-slate-900 text-amber-400 px-5 py-3.5 flex justify-between items-center">
+      <div class="bg-slate-900 text-amber-400 px-5 py-3.5 flex justify-between items-center flex-shrink-0">
         <h3 class="text-lg sm:text-xl font-black text-white">⚙️ 商品與排序管理</h3>
         <button onclick="closeModal('manageItemsModal')" class="text-amber-400 hover:text-white text-2xl font-bold p-1 transition-colors">✕</button>
       </div>
@@ -162,21 +162,20 @@
             <input type="text" id="newCatInput" class="flex-1 p-2 bg-slate-50 border border-slate-300 rounded-xl text-base font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all" placeholder="新分類名稱">
             <button onclick="addCategory()" class="bg-slate-900 hover:bg-slate-800 text-amber-400 px-4 rounded-xl text-base font-black shadow-2xs transition-all active:scale-95">新增</button>
           </div>
-          <div id="categoryManageList" class="divide-y divide-slate-200 bg-slate-50 p-2 rounded-xl border border-slate-200"></div>
+          <div id="categoryManageList" class="divide-y divide-slate-200 bg-slate-50 p-2 rounded-xl border border-slate-200 max-h-48 overflow-y-auto"></div>
         </div>
         <div>
           <div class="flex justify-between items-center mb-2">
             <h4 class="font-black text-slate-900 text-base">商品排序與清單</h4>
             <span class="text-xs font-bold text-slate-500">使用 ⬆️ ⬇️ 調整順序</span>
           </div>
-          <div id="itemManageList" class="divide-y divide-slate-200 bg-slate-50 p-2 rounded-xl border border-slate-200"></div>
+          <div id="itemManageList" class="divide-y divide-slate-200 bg-slate-50 p-2 rounded-xl border border-slate-200 max-h-72 overflow-y-auto"></div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // 雲端資料庫設定 (JSONBin)
     const BIN_ID = '6acb8171ac6210605a27bc41';
     const API_KEY = '$2a$10$CiO6ioiPvSncqvUg6oUNl.q.3OKFbPu5mxjpFW7pZ/kR.lCqvng1C';
 
@@ -208,7 +207,6 @@
       loadCloudData();
     }
 
-    // 從雲端讀取所有資料 (包含商品、分類、歷史紀錄)
     function loadCloudData() {
       fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
         headers: { 'X-Master-Key': API_KEY }
@@ -216,13 +214,11 @@
       .then(res => res.json())
       .then(data => {
         const cloudData = data.record;
-        // 如果雲端已經有完整結構
         if (cloudData && typeof cloudData === 'object' && !Array.isArray(cloudData)) {
           categories = cloudData.categories || defaultCategories;
           items = cloudData.items || defaultItems;
           checkoutHistory = cloudData.history || [];
         } else if (Array.isArray(cloudData)) {
-          // 相容舊版只有歷史陣列的情況
           checkoutHistory = cloudData;
         }
 
@@ -243,7 +239,6 @@
       });
     }
 
-    // 將所有資料 (商品、分類、歷史紀錄) 同步寫入雲端
     function syncAllToCloud(callback) {
       const payload = {
         categories: categories,
@@ -345,7 +340,7 @@
 
             <div class="flex items-center justify-between gap-2 mb-2">
               <div class="text-base sm:text-lg font-bold text-slate-800">
-                打 $<span class="text-xl sm:text-2xl font-black text-slate-950">${item.dozenPrice}</span> / 雙 $<span class="text-xl sm:text-2xl font-black text-slate-950">${item.pairPrice}</span>
+                打 $<span class="text-base sm:text-lg font-normal text-slate-800">${item.dozenPrice}</span> / 雙 $<span class="text-base sm:text-lg font-normal text-slate-800">${item.pairPrice}</span>
               </div>
               <div class="text-base sm:text-lg px-3 py-0.5 rounded-lg ${subtotalBadgeStyle}">
                 小計：$<span class="text-lg sm:text-xl font-black">${subtotal}</span>
@@ -501,7 +496,6 @@
 
       alert('正在將訂單同步至雲端，請稍候...');
 
-      // 先抓最新資料再插入紀錄
       fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
         headers: { 'X-Master-Key': API_KEY }
       })

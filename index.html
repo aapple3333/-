@@ -125,7 +125,7 @@
           </div>
         </div>
         <div>
-          <label class="block text-sm font-black text-slate-800 mb-1">商品圖片 (選填)</label>
+          <label class="block text-sm font-black text-slate-800 mb-1">商品圖片 (自動壓縮與正方形裁切)</label>
           <div class="flex items-center gap-3">
             <div id="imagePreviewContainer" class="w-14 h-14 bg-slate-100 border border-slate-300 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
               <span class="text-2xl" id="imagePreviewPlaceholder">📦</span>
@@ -214,7 +214,6 @@
     let currentManageTab = 'category';
 
     function verifyAdmin() {
-      // 檢查工作階段是否已經驗證過密碼
       if (sessionStorage.getItem('admin_authenticated') === 'true') {
         return true;
       }
@@ -224,7 +223,6 @@
         alert('密碼錯誤！');
         return false;
       }
-      // 驗證成功，記錄在 sessionStorage 中（分頁關閉後失效）
       sessionStorage.setItem('admin_authenticated', 'true');
       return true;
     }
@@ -661,16 +659,42 @@
       document.body.removeChild(textarea);
     }
 
+    // 自動壓縮並將圖片裁切為正方形
     function handleImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
+
       const reader = new FileReader();
       reader.onload = function(event) {
-        const base64 = event.target.result;
-        document.getElementById('itemImageBase64').value = base64;
-        document.getElementById('imagePreviewImg').src = base64;
-        document.getElementById('imagePreviewImg').classList.remove('hidden');
-        document.getElementById('imagePreviewPlaceholder').classList.add('hidden');
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 200; // 限制最大尺寸 200x200 像素，確保體積小於 20KB
+          let width = img.width;
+          let height = img.height;
+
+          // 計算正方形裁切範圍 (置中裁切)
+          let sourceX = 0, sourceY = 0, sourceSize = Math.min(width, height);
+          if (width > height) {
+            sourceX = (width - height) / 2;
+          } else {
+            sourceY = (height - width) / 2;
+          }
+
+          canvas.width = MAX_SIZE;
+          canvas.height = MAX_SIZE;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, MAX_SIZE, MAX_SIZE);
+
+          // 轉為高品質壓縮的 WebP/JPEG 格式
+          const base64 = canvas.toDataURL('image/jpeg', 0.8);
+          
+          document.getElementById('itemImageBase64').value = base64;
+          document.getElementById('imagePreviewImg').src = base64;
+          document.getElementById('imagePreviewImg').classList.remove('hidden');
+          document.getElementById('imagePreviewPlaceholder').classList.add('hidden');
+        };
+        img.src = event.target.result;
       };
       reader.readAsDataURL(file);
     }
